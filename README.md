@@ -295,7 +295,7 @@ axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest'
 
 const host = 'http://localhost/'
 
-async function generatePreSignedUrlAnsStore(file) {
+async function generatePreSignedUrlAndStore(file) {
   const response = await axios.post(`${host}/attachments/signed-storage-url`)
 
   const headers = response.data.headers
@@ -313,7 +313,7 @@ async function generatePreSignedUrlAnsStore(file) {
 document.querySelector('#file').addEventListener('change', (evt) => {
   const file = evt.target.files[0]
 
-  generatePreSignedUrlAnsStore(file).then((response) => {
+  generatePreSignedUrlAndStore(file).then((response) => {
     axios.post(`${host}/profile-image`, {
       file: {
         path: response.path,
