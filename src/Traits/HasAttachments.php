@@ -37,7 +37,7 @@ trait HasAttachments
     {
         static::deleted(static function (Model $model) {
             if (!isset($model->forceDeleting) || $model->forceDeleting) {
-                $model->removeAttachments($model->getRawAttachments());
+                $model->removeAttachments($model->getCurrentAttachments());
             }
         });
     }
@@ -78,7 +78,7 @@ trait HasAttachments
                 if ($value) {
                     $attachments = json_encode($this->mergeAttachments($value));
                 } else {
-                    $this->removeAttachments($this->getRawAttachments());
+                    $this->removeAttachments($this->getCurrentAttachments());
                 }
 
                 return $attachments;
@@ -86,27 +86,24 @@ trait HasAttachments
         );
     }
 
-    public function deleteAttachment(string|array $value): void
+    public function updateAttachments(array $newAttachments): void
     {
-        $attachments = $this->getRawAttachments();
+        $this->update(['attachments' => $newAttachments]);
+    }
 
-        $backupAttachments = [];
+    public function deleteAttachment(string|array $key): void
+    {
+        $attachments = $this->getCurrentAttachments();
 
-        if (is_array($value)) {
-            foreach ($value as $key) {
-                $backupAttachments[$key] = $attachments[$key];
+        if (is_array($key)) {
+            foreach ($key as $k) {
+                $attachments[$k] = null;
             }
         } else {
-            $backupAttachments[$value] = $attachments[$value];
-        }
-
-        foreach ($backupAttachments as $key => $path) {
             $attachments[$key] = null;
         }
 
         $this->update(compact('attachments'));
-
-        $this->removeAttachments($backupAttachments);
     }
 
     public function deleteAttachments(): void
@@ -116,27 +113,27 @@ trait HasAttachments
 
     protected function mergeAttachments(?array $newAttachments): ?array
     {
-        $rawAttachments = $this->getRawAttachments();
+        $currentAttachments = $this->getCurrentAttachments();
 
         $oldAttchments = [];
 
         foreach ($newAttachments as $key => $attachment) {
-            if ($this->isAttachmentOld($rawAttachments, $key, $attachment)) {
-                $oldAttchments[$key] = $rawAttachments[$key];
+            if ($this->isAttachmentOld($currentAttachments, $key, $attachment)) {
+                $oldAttchments[$key] = $currentAttachments[$key];
             }
 
-            if ($this->isAttachmentNew($rawAttachments, $key, $attachment)) {
-                $rawAttachments[$key] = $this->handleAttachment($attachment);
+            if ($this->isAttachmentNew($currentAttachments, $key, $attachment)) {
+                $currentAttachments[$key] = $this->handleAttachment($attachment);
             }
 
-            if (!$rawAttachments[$key]) {
-                unset($rawAttachments[$key]);
+            if (!$currentAttachments[$key]) {
+                unset($currentAttachments[$key]);
             }
         }
 
         $this->removeAttachments($oldAttchments);
 
-        return $rawAttachments;
+        return $currentAttachments;
     }
 
     protected function handleAttachment(mixed $attachment): ?string
@@ -203,7 +200,7 @@ trait HasAttachments
         return trim($path, '/');
     }
 
-    protected function getRawAttachments(): array
+    protected function getCurrentAttachments(): array
     {
         return json_decode($this->getRawOriginal('attachments') ?: '{}', true);
     }
@@ -213,13 +210,13 @@ trait HasAttachments
         return Storage::disk($this->attachmentsDisk());
     }
 
-    protected function isAttachmentOld(array $rawAttachments, string $key, UploadedFile|array|string|null $attachment): bool
+    protected function isAttachmentOld(array $currentAttachments, string $key, UploadedFile|array|string|null $attachment): bool
     {
-        return Arr::exists($rawAttachments, $key) && $rawAttachments[$key] !== $attachment;
+        return Arr::exists($currentAttachments, $key) && $currentAttachments[$key] !== $attachment;
     }
 
-    protected function isAttachmentNew(array $rawAttachments, string $key, UploadedFile|array|string|null $attachment): bool
+    protected function isAttachmentNew(array $currentAttachments, string $key, UploadedFile|array|string|null $attachment): bool
     {
-        return !Arr::exists($rawAttachments, $key) || $rawAttachments[$key] !== $attachment;
+        return !Arr::exists($currentAttachments, $key) || $currentAttachments[$key] !== $attachment;
     }
 }
