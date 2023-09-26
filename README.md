@@ -57,7 +57,7 @@ class MyModel extends Model
 MyModel::create([
     // ...
     'attachments' => [
-        'profile_image' => $request->profile_image,
+        'file' => $request->file,
     ],
 ]);
 ```
@@ -66,7 +66,7 @@ MyModel::create([
 $myModel->update([
   // ...
   'attachments' => [
-    'profile_image' => $request->profile_image,
+    'file' => $request->file,
   ],
 ]);
 ```
@@ -75,25 +75,33 @@ The file will be store in the `attachments` column like this:
 
 ```json
 {
-  "profile_image": "b/4/c/Y5EsfRvITY4SEyP3IBwUMurkkpRo69DfEMEIRlp9.jpg"
+  "file": "Y5EsfRvITY4SEyP3IBwUMurkkpRo69DfEMEIRlp9.jpg"
 }
 ```
 
-**IMPORTANT:**  There are two accepted values for an attachment. The first one is when a file is sent directly to the server. An `UploadedFile` value is expected. The second one is when pre-signed urls are being used. An `array` with a valid `path` key is expected. We'll talk more about this second type in the section about pre-signed urls.
+**IMPORTANT:**  There are two accepted values for an attachment. The first one is when a file is sent directly to the server as an `UploadedFile` value. The second one is when pre-signed urls are being used and an `array` with a valid `path` key is expected. We'll talk more about this second type in the section about pre-signed urls.
 
 ## How it works?
 
-The main rule you need to be aware of when using this package is that every time the `attachments` is set, a merge will be performed between the new value and the previous one already stored (if exist). So, even if you have multiple files stored you'll be able to perform actions individually. All examples below would work even if multiple files were already stored.
+The main rule you need to be aware of when using this package is that every time the `attachments` attribute is set, a merge will be performed between the new value and the previous one already stored (if exist). So, even if you have multiple files stored you'll be able to perform actions individually. All examples below would work even if multiple files were already stored.
 
-### How to update an attachment?
+### How to update/create an attachment?
 
-To update an attachment just set a new value to the key you want to update. The old file will be permanently removed from the storage disk. Example:
+**Option 1 —** To update an attachment just set a new value to the key you want to update. The old file will be permanently removed from the storage disk.
 
 ```php
-$user->update([
+$myModel->update([
   'attachments' => [
-    'profile_image' => $request->profile_image,
+    'file' => $request->file,
   ],
+]);
+```
+
+**Option 2 —** The second way is using the `updateAttachments` method.
+
+```php
+$myModel->updateAttachments([
+  'file' => $request->file,
 ]);
 ```
 
@@ -104,28 +112,28 @@ $user->update([
 ```php
 $myModel->update([
   'attachments' => [
-    'profile_image' => null,
+    'file' => null,
   ],
 ]);
 ```
 
-The `profile_image` file will be removed from the storage disk and the key will be removed from the attachments column.
+The `file` attachment will be removed from the storage disk and the key will be removed from the attachments column.
 
 **Option 2 —** The second way is using the `deleteAttachment` method.
 
 ```php
-$myModel->deleteAttachment('profile_image');
+$myModel->deleteAttachment('file');
 ```
 
 If you want to delete more than one file an array can be provided to this method.
 
 ```php
-$myModel->deleteAttachment(['profile_image', 'cover_image']);
+$myModel->deleteAttachment(['file', 'cover_image']);
 ```
 
 ### How to remove all the attachments?
 
-To remove all files you can set the attachments to `null`.
+**Option 1 —** To remove all files you can set the attachments to `null`.
 
 ```php
 $myModel->update([
@@ -133,15 +141,15 @@ $myModel->update([
 ]);
 ```
 
-Also, you can use the `deleteAttachments` method.
+**Option 2 —** Also, you can use the `deleteAttachments` method.
 
 ```php
 $myModel->delateAttachments();
 ```
 
-### Deleting a record
+### Deleting a model record
 
-Every time a record from model that has `HasAttachments` trait is deleted, all the files in the attachments column will be removed from the storage disk. If your model has soft deletion enabled, the files will be removed only on `forceDelete`.
+Every time a record from a model that has `HasAttachments` trait is deleted, all the files in the attachments column will be removed from the storage disk. If your model has `SoftDeletes` trait present, the files will be removed only on `forceDelete`.
 
 ## Global configuration
 
@@ -155,7 +163,7 @@ The folder where all attachments will be stored. **Default:** `''`
 
 #### file.appends
 
-Transforms the path string stored in the database into an object with extra information. If empty, nothing will be appended to the path. **Default:** `[ AttachmentsAppend::Path, AttachmentsAppend::Url, AttachmentsAppend::Exists ]`
+Transforms the path string stored in the database into an array with extra information. If empty, nothing will be appended to the path. **Default:** `[ AttachmentsAppend::Path, AttachmentsAppend::Url, AttachmentsAppend::Exists ]`
 
 ### Path
 
@@ -183,7 +191,7 @@ The pre-signed urls expiration time in minutes. **Default:** `5`
 
 #### signed_storage.route
 
-The pre-signed url route generator configuration.
+The pre-signed url route configuration.
 
 ## Model configuration
 
@@ -193,13 +201,6 @@ If you want a more granular configuration you can customize some options directl
 public function attachmentsBaseFolder(): string
 {
     return 'users';
-}
-```
-
-```php
-public function isAttachmentsWrapperFolderEnabled(): bool
-{
-    return true;
 }
 ```
 
@@ -226,11 +227,11 @@ public function attachmentsDisk(): string
 
 ## Pre-Signed URLs
 
-When using a pre-signed urls approach, your files will be stored in services like s3 and the files won't be sent through the server anymore. Instead, the files are uploaded directly from the frontend to the cloud service and just a reference for this file will be sent to the server. This package expects an array with a `path` that should match with the file location in your storage service.
+When using pre-signed urls, your files will be stored in services like s3 and the files won't be sent through the server anymore. Instead, the files should be uploaded directly from the frontend to the cloud service and just a reference for this file will be sent to the server. This package expects an array with a `path` that should match with the file location in your storage service.
 
 ### How to use this approach?
 
-**1 —** [Configure s3 in your Laravel app](https://laravel-news.com/using-s3-with-laravel) and set your filesystem disk to `s3`.
+**1 —** [Configure s3 in your Laravel app](https://laravel-news.com/using-s3-with-laravel) and don't forget to set your filesystem disk to `s3`.
 
 ```
 FILESYSTEM_DISK=s3
@@ -256,7 +257,7 @@ FILESYSTEM_DISK=s3
 ]
 ```
 
-**IMPORTANT:** Be careful, you should probably be more restrictive than the example above in non local environments.
+**IMPORTANT:** Be careful, you should probably be more restrictive than the example above in non development environments.
 
 **3 —** Enable and configure the pre-signed url endpoint in the `attachments.php` config file.
 
@@ -265,13 +266,13 @@ FILESYSTEM_DISK=s3
 ```php
 protected function update(User $user, Request $request) {
     $request->validate([
-        'profile_image' => ['required', new PreSignedAttachmentRule],
+        'file' => ['required', new PreSignedAttachmentRule],
     ]);
 
     $user->update([
         // ...
         'attachments' => [
-            'profile_image' => $request->profile_image,
+            'file' => $request->file,
         ],
     ]);
 
@@ -314,7 +315,7 @@ document.querySelector('#file').addEventListener('change', (evt) => {
 
   generatePreSignedUrlAnsStore(file).then((response) => {
     axios.post(`${host}/profile-image`, {
-      profile_image: {
+      file: {
         path: response.path,
         name: file.name,
         content_type: file.type,
