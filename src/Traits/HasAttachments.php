@@ -55,14 +55,10 @@ trait HasAttachments
     protected function attachments(): Attribute
     {
         return Attribute::make(
-            get: function (mixed $value): object {
-                if (!$value) {
-                    return (object) [];
-                }
-
+            get: function (?string $value): array {
                 $fs = $this->getAttachmentsFs();
 
-                $attachments = json_decode($value, true);
+                $attachments = json_decode($value ?: '{}', true);
 
                 $appends = config('attachments.file.appends');
 
@@ -77,19 +73,19 @@ trait HasAttachments
                         $data['exists'] = $fs->has($path);
                     }
 
-                    if (in_array(AttachmentsAppend::Path, $appends) || !empty($data)) {
+                    if (in_array(AttachmentsAppend::Path, $appends) || !$data) {
                         $data['path'] = $path;
                     }
 
-                    $attachments[$attachment] = empty($data) ? $path : (object) $data;
+                    $attachments[$attachment] = $data ?: $path;
                 }
 
-                return (object) $attachments;
+                return $attachments;
             },
-            set: function (mixed $value) {
+            set: function (?array $value): ?string {
                 $attachments = $this->mergeAttachments($value);
 
-                return !empty($attachments) ? json_encode($attachments) : null;
+                return $attachments ? json_encode($attachments) : null;
             },
         );
     }
