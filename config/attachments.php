@@ -14,7 +14,7 @@ return [
     ],
 
     'path_obfuscation' => [
-        'enabled' =>  true,
+        'enabled' =>  false,
         'levels' =>  3,
     ],
 
