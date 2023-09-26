@@ -44,9 +44,7 @@ trait HasAttachments
         $self = new static;
 
         $self::deleted(static function (Model $model) use ($self) {
-            if (!isset($model->forceDeleting)) {
-                $self->removeAttachments($model);
-            } else if ($model->forceDeleting) {
+            if (!isset($model->forceDeleting) || $model->forceDeleting) {
                 $self->removeAttachments($model);
             }
         });
@@ -131,7 +129,7 @@ trait HasAttachments
         $rawAttachments = $this->getRawAttachments();
 
         foreach ($newAttachments as $key => $path) {
-            if (!empty($rawAttachments[$key])) {
+            if (Arr::exists($rawAttachments, $key)) {
                 $this->deleteAttachment($key);
             }
         }
