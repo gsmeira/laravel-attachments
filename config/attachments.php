@@ -6,7 +6,6 @@ return [
 
     'file' => [
         'base_folder' =>  '',
-        'wrapper_folder' => false,
         'appends' => [
             AttachmentsAppend::Path,
             AttachmentsAppend::Url,

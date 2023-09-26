@@ -19,11 +19,6 @@ trait HasAttachments
         return config('attachments.file.base_folder');
     }
 
-    public function isAttachmentsWrapperFolderEnabled(): bool
-    {
-        return config('attachments.file.wrapper_folder');
-    }
-
     public function isAttachmentsPathObfuscationEnabled(): bool
     {
         return config('attachments.path_obfuscation.enabled');
@@ -109,7 +104,7 @@ trait HasAttachments
         $fs = $this->getAttachmentsFs();
 
         foreach ($backupAttachments as $key => $path) {
-            $this->removeAttachment($fs, $path);
+            $fs->delete($path);
         }
     }
 
@@ -186,15 +181,6 @@ trait HasAttachments
         $fs = $this->getAttachmentsFs();
 
         foreach ($model->getRawAttachments() as $key => $path) {
-            $this->removeAttachment($fs, $path);
-        }
-    }
-
-    protected function removeAttachment(FilesystemAdapter|AwsS3V3Adapter $fs, string $path): void
-    {
-         if (Str::contains(trim($path, '/'), '/')) {
-            $fs->deleteDirectory(dirname($path));
-        } else {
             $fs->delete($path);
         }
     }
@@ -211,10 +197,6 @@ trait HasAttachments
             }
         }
 
-        if ($this->isAttachmentsWrapperFolderEnabled()) {
-            $path .= $randomStr.DIRECTORY_SEPARATOR;
-        }
-
         $folder = trim($this->attachmentsBaseFolder(), '/');
 
         if ($folder) {
@@ -225,13 +207,7 @@ trait HasAttachments
             return '';
         }
 
-        $fs = $this->getAttachmentsFs();
-
-        if ($fs->exists($path)) {
-            return $this->generateAttachmentPath($fs, $folder);
-        } else {
-            return trim($path, '/');
-        }
+        return trim($path, '/');
     }
 
     protected function getRawAttachments(): array

@@ -153,10 +153,6 @@ Located inside the `config/attachments.php` file.
 
 The folder where all attachments will be stored. **Default:** `''`
 
-#### file.wrapper_folder
-
-If `true` the file will be put inside of a random folder. **Default:** `false`
-
 #### file.appends
 
 Transforms the path string stored in the database into an object with extra information. If empty, nothing will be appended to the path. **Default:** `[ AttachmentsAppend::Path, AttachmentsAppend::Url, AttachmentsAppend::Exists ]`
