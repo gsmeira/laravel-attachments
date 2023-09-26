@@ -1,6 +1,6 @@
 # Laravel Attachments
 
-![image](https://github.com/gsmeira/laravel-attachments/assets/1690400/f9ee6a2c-0b8a-4ac2-9e67-1b7fa275941a)
+![image](https://github.com/gsmeira/laravel-attachments/assets/1690400/af0f3ff4-55f3-4113-8f18-23f784f56233)
 
 - Seamless integration
 - Flexible configuration
