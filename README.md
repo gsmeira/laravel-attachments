@@ -42,7 +42,7 @@ FILESYSTEM_DISK=<disk>
 $table->json('attachments')->nullable();
 ```
 
-**2 —** Add the `HasAttachments` trait to your model.
+**3 —** Add the `HasAttachments` trait to your model.
 
 ```php
 class MyModel extends Model
@@ -51,7 +51,7 @@ class MyModel extends Model
 }
 ```
 
-**3 —** Pass a valid value for the attachments when creating or updating.
+**4 —** Pass a valid value for the attachments when creating or updating.
 
 ```php
 MyModel::create([
