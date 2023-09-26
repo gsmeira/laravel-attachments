@@ -35,11 +35,9 @@ trait HasAttachments
 
     public static function bootHasAttachments(): void
     {
-        $self = new static;
-
-        $self::deleted(static function (Model $model) use ($self) {
+        static::deleted(static function (Model $model) {
             if (!isset($model->forceDeleting) || $model->forceDeleting) {
-                $self->removeAttachments($model);
+                $model->removeAttachments($model->getRawAttachments());
             }
         });
     }
@@ -75,9 +73,15 @@ trait HasAttachments
                 return $attachments;
             },
             set: function (?array $value): ?string {
-                $attachments = $this->mergeAttachments($value);
+                $attachments = null;
 
-                return $attachments ? json_encode($attachments) : null;
+                if ($value) {
+                    $attachments = json_encode($this->mergeAttachments($value));
+                } else {
+                    $this->removeAttachments($this->getRawAttachments());
+                }
+
+                return $attachments;
             },
         );
     }
@@ -97,16 +101,12 @@ trait HasAttachments
         }
 
         foreach ($backupAttachments as $key => $path) {
-            unset($attachments[$key]);
+            $attachments[$key] = null;
         }
 
         $this->update(compact('attachments'));
 
-        $fs = $this->getAttachmentsFs();
-
-        foreach ($backupAttachments as $key => $path) {
-            $fs->delete($path);
-        }
+        $this->removeAttachments($backupAttachments);
     }
 
     public function deleteAttachments(): void
@@ -116,29 +116,25 @@ trait HasAttachments
 
     protected function mergeAttachments(?array $newAttachments): ?array
     {
-        if (!$newAttachments) {
-            $this->removeAttachments($this);
-
-            return null;
-        }
-
         $rawAttachments = $this->getRawAttachments();
 
-        foreach ($newAttachments as $key => $path) {
-            if (Arr::exists($rawAttachments, $key)) {
-                $this->deleteAttachment($key);
-            }
-        }
+        $oldAttchments = [];
 
         foreach ($newAttachments as $key => $attachment) {
-            $rawAttachments[$key] = $this->handleAttachment($attachment);
-        }
+            if ($this->isAttachmentOld($rawAttachments, $key, $attachment)) {
+                $oldAttchments[$key] = $rawAttachments[$key];
+            }
 
-        foreach ($rawAttachments as $key => $path) {
-            if (!$path) {
+            if ($this->isAttachmentNew($rawAttachments, $key, $attachment)) {
+                $rawAttachments[$key] = $this->handleAttachment($attachment);
+            }
+
+            if (!$rawAttachments[$key]) {
                 unset($rawAttachments[$key]);
             }
         }
+
+        $this->removeAttachments($oldAttchments);
 
         return $rawAttachments;
     }
@@ -177,11 +173,11 @@ trait HasAttachments
         return $path;
     }
 
-    protected function removeAttachments(Model $model): void
+    protected function removeAttachments(array $attachments): void
     {
         $fs = $this->getAttachmentsFs();
 
-        foreach ($model->getRawAttachments() as $key => $path) {
+        foreach ($attachments as $key => $path) {
             $fs->delete($path);
         }
     }
@@ -215,5 +211,15 @@ trait HasAttachments
     protected function getAttachmentsFs(): FilesystemAdapter|AwsS3V3Adapter
     {
         return Storage::disk($this->attachmentsDisk());
+    }
+
+    protected function isAttachmentOld(array $rawAttachments, string $key, UploadedFile|array|string|null $attachment): bool
+    {
+        return Arr::exists($rawAttachments, $key) && $rawAttachments[$key] !== $attachment;
+    }
+
+    protected function isAttachmentNew(array $rawAttachments, string $key, UploadedFile|array|string|null $attachment): bool
+    {
+        return !Arr::exists($rawAttachments, $key) || $rawAttachments[$key] !== $attachment;
     }
 }
