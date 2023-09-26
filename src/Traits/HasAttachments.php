@@ -10,7 +10,6 @@ use Illuminate\Http\UploadedFile;
 use GSMeira\LaravelAttachments\Enums\AttachmentsAppend;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
 
 trait HasAttachments
 {
@@ -85,21 +84,23 @@ trait HasAttachments
 
     public function deleteAttachment(string|array $value): void
     {
-        $rawAttachments = $this->getRawAttachments();
+        $attachments = $this->getRawAttachments();
 
         $backupAttachments = [];
 
         if (is_array($value)) {
-            $backupAttachments = array_map(fn ($key) => [ $key => $rawAttachments[$key] ], $value);
+            foreach ($value as $key) {
+                $backupAttachments[$key] = $attachments[$key];
+            }
         } else {
-            $backupAttachments[$value] = $rawAttachments[$value];
+            $backupAttachments[$value] = $attachments[$value];
         }
 
         foreach ($backupAttachments as $key => $path) {
-            unset($rawAttachments[$key]);
+            unset($attachments[$key]);
         }
 
-        $this->update(compact('rawAttachments'));
+        $this->update(compact('attachments'));
 
         $fs = $this->getAttachmentsFs();
 
