@@ -203,10 +203,6 @@ trait HasAttachments
             $path = $folder.DIRECTORY_SEPARATOR.$path;
         }
 
-        if (!$path) {
-            return '';
-        }
-
         return trim($path, '/');
     }
 
