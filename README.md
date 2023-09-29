@@ -2,13 +2,13 @@
 
 ![image](https://github.com/gsmeira/laravel-attachments/assets/1690400/af0f3ff4-55f3-4113-8f18-23f784f56233)
 
-- Seamless integration
-- Flexible configuration
-- Good for serverless environments
-- One JSON column to hold all files in a record
-- Append pre-defined data to file base path
-- Handle and validate pre-signed url responses out of the box
-- Path obfuscation
+- ✅ Seamless integration
+- ✅ Flexible configuration
+- ✅ Good for serverless environments
+- ✅ One JSON column to hold all files in a record
+- ✅ Append pre-defined data to file base path
+- ✅ Handle and validate pre-signed url responses out of the box
+- ✅ Path obfuscation
 
 ## Installation
 
